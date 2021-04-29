@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'message.dart';
@@ -11,14 +12,15 @@ class MessageSerializer {
 
   static MessageSerializer? _instance;
 
-  /// Yield a [Message] from some raw string arriving from a websocket.
-  Message decode(String rawData) {
+  /// Yield a [FutureOr<Message>] from some raw string arriving
+  /// from a websocket.
+  FutureOr<Message> decode(String rawData) {
     return Message.fromJson(jsonDecode(rawData));
   }
 
   /// Given a [Message], return the raw string that would be sent through
   /// a websocket.
-  String encode(Message message) {
+  FutureOr<String> encode(Message message) {
     return jsonEncode(message.encode());
   }
 }

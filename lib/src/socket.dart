@@ -61,7 +61,7 @@ class PhoenixSocket {
     _reconnects = _options.reconnectDelays;
 
     _messageStream =
-        _receiveStreamController.stream.map(_options.serializer.decode);
+        _receiveStreamController.stream.asyncMap(_options.serializer.decode);
 
     _openStream = _stateStreamController.stream
         .where((event) => event is PhoenixSocketOpenEvent)
@@ -329,8 +329,19 @@ class PhoenixSocket {
         'does not contain a ref',
       );
     }
-    _ws!.sink.add(_options.serializer.encode(message));
-    return (_pendingMessages[message.ref!] = Completer<Message>()).future;
+
+    final encodedMessageOrFuture = _options.serializer.encode(message);
+    final completer = Completer<Message>();
+
+    if (encodedMessageOrFuture is Future) {
+      (encodedMessageOrFuture as Future<String>)
+          .then((encodedMessage) => _ws!.sink.add(encodedMessage))
+          .catchError(completer.completeError);
+    } else {
+      _ws!.sink.add(encodedMessageOrFuture);
+    }
+
+    return (_pendingMessages[message.ref!] = completer).future;
   }
 
   /// [topic] is the name of the channel you wish to join
